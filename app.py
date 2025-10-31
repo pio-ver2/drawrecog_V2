@@ -136,6 +136,54 @@ if canvas_result.image_data is not None and api_key and analyze_button:
             st.error(f"An error occurred: {e}")
 else:
     # Warnings for user action required
-
     if not api_key:
         st.warning("Por favor ingresa tu API key.")
+
+
+# ====================================================
+# CONFIGURACIÓN DE IMAGEN CARGADA (NUEVA SECCIÓN)
+# ====================================================
+st.sidebar.subheader("Configuración de Imagen")
+uploaded_image = st.sidebar.file_uploader("Sube una imagen (PNG, JPG o JPEG):", type=["png", "jpg", "jpeg"])
+
+if uploaded_image is not None:
+    st.image(uploaded_image, caption="Imagen cargada", use_column_width=False, width=250)
+
+    if st.button("Analizar imagen cargada"):
+        with st.spinner("Analizando imagen cargada..."):
+            try:
+                # Guardar temporalmente la imagen
+                image = Image.open(uploaded_image)
+                temp_path = "uploaded_image.png"
+                image.save(temp_path)
+
+                # Codificar imagen en base64
+                base64_image = encode_image_to_base64(temp_path)
+
+                prompt_text = "Describe brevemente la imagen en español"
+
+                # Llamada a la API
+                response = openai.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt_text},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/png;base64,{base64_image}",
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                    max_tokens=500,
+                )
+
+                st.success("Análisis completado:")
+                st.write(response.choices[0].message.content)
+
+            except Exception as e:
+                st.error(f"Ocurrió un error al analizar la imagen: {e}")
